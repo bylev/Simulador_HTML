@@ -4,8 +4,6 @@
 ## Actividad: Simulador HTML
 
 -----
-# Índice
-
 # Introducción
 
 En este proyecto se realizó un simulador interactivo diseñado para visualizar y comprender cómo el Sistema Operativo gestiona la memoria mediante **particiones fijas** y **particiones variables**. El objetivo de este simulador es observar cómo los procesos son asignados, cómo se genera la fragmentación y cómo se optimiza el espacio según el algoritmo de ajust (First-Fit, Worst-Fit, Best-Fit).
