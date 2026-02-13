@@ -1,0 +1,731 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Simulador Best Fit / Worst Fit — Interfaz compacta</title>
+  <style>
+  :root{
+    --bg-start:#071024; --bg-end:#071726; --panel:#071826cc;
+    --text:#e6eef6; --muted:#9aa7b2; --card-title:#dff3ff;
+    --button-text:#ffffff; --alloc-text:#ffffff;
+    --accent:#3b82f6; --accent-2:#10b981;
+    --glass: rgba(255,255,255,0.03); --card-grad: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:12px; font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    background: linear-gradient(180deg,var(--bg-start) 0%, var(--bg-end) 60%); color:var(--text); -webkit-font-smoothing:antialiased;
+    -webkit-user-select:none; user-select:none;
+  }
+
+  /* Header */
+  .topbar{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px }
+  .brand{ display:flex; gap:10px; align-items:center }
+  .logo{ width:42px; height:42px; border-radius:9px; background:linear-gradient(135deg,var(--accent),#60a5fa); display:flex; align-items:center; justify-content:center; font-weight:800; color:white }
+  .title { font-size:16px; font-weight:700 }
+
+  .toolbar-actions{ display:flex; gap:8px; align-items:center }
+  .icon-btn{ background:transparent; border:1px solid rgba(255,255,255,0.06); padding:6px 8px; border-radius:9px; color:var(--muted); cursor:pointer; font-size:13px }
+
+  .layout { display:flex; gap:12px; align-items:flex-start; flex-wrap:wrap; }
+  .left { width:360px; min-width:300px }
+  .right { flex:1; min-width:360px }
+
+  .card { background:var(--card-grad); border:1px solid rgba(255,255,255,0.04); padding:12px; border-radius:10px; box-shadow:0 6px 18px rgba(2,6,23,0.5); }
+  .card h3{ margin:0 0 6px 0; font-size:15px }
+  /* card header utility to keep title and small controls aligned */
+  .card-header{ display:flex; align-items:center; justify-content:space-between; gap:8px }
+  .unit-inline{ color:var(--muted); font-size:12px; display:flex; align-items:center; gap:8px; white-space:nowrap }
+  .unit-select{ margin-left:6px; padding:6px 8px; min-width:72px }
+  /* small helpers */
+  .guide-card{ margin-bottom:12px }
+  .guide-text{ color:var(--muted); margin-top:8px; font-size:13px }
+  .guide-text ol{ margin:6px 0 0 18px; padding:0 }
+  .flex-fill{ flex:1 }
+  .small-input{ width:100px }
+  .range-input{ width:140px }
+  .row-between{ display:flex; gap:8px; margin-top:8px; justify-content:space-between; align-items:center }
+  .file-hidden{ display:none }
+  .small-muted{ color:var(--muted); font-size:12px }
+  .summary-row{ margin-top:10px; display:flex; gap:10px }
+  .summary-card{ flex:1; min-width:200px }
+  .auto-label{ margin-left:auto; color:var(--muted); font-size:13px }
+  .form-row.spaced{ margin-top:6px }
+  .form-row.center{ gap:6px; align-items:center }
+
+  .form-row{ display:flex; gap:8px; align-items:center; margin-top:8px }
+  label.small{ font-size:13px; color:var(--muted); min-width:100px }
+  /* make labels fixed and inputs flexible to avoid overflow */
+  .form-row label.small{ flex:0 0 110px }
+  .form-row input.input, .form-row select.input{ flex:1; min-width:0 }
+
+  input.input, select.input, .small-btn{ background:transparent; border:1px solid rgba(255,255,255,0.06); color:var(--muted); padding:7px 8px; border-radius:8px; font-size:13px }
+  input.input:focus, select.input:focus{ outline:2px solid rgba(59,130,246,0.12); border-color:rgba(59,130,246,0.18); color:inherit }
+
+  .primary{ background:linear-gradient(90deg,var(--accent),#60a5fa); border:0; color:var(--button-text); padding:8px 10px; border-radius:9px; cursor:pointer; box-shadow:0 6px 12px rgba(59,130,246,0.12); font-size:13px }
+  .secondary{ background:transparent; border:1px solid rgba(255,255,255,0.06); color:var(--muted); padding:7px 9px; border-radius:9px; cursor:pointer; font-size:13px }
+  .primary, .secondary{ transition:all 180ms ease }
+  .primary:hover{ transform:translateY(-2px) }
+  .secondary:hover{ background:rgba(255,255,255,0.02); border-color:rgba(255,255,255,0.08) }
+
+  .proc-list{ margin-top:10px; max-height:160px; overflow:auto; border-radius:8px; padding:6px; background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent); border:1px dashed rgba(255,255,255,0.03); font-size:13px }
+  .proc-item{ display:flex; justify-content:space-between; align-items:center; gap:8px; padding:10px; border-radius:8px; background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00)); border:1px solid rgba(255,255,255,0.02) }
+  .proc-meta{ color:var(--muted); font-size:12px }
+
+  .controls { display:flex; gap:8px; flex-wrap:wrap; margin-top:6px }
+  .toolbar { display:flex; gap:8px; align-items:center; margin-top:8px; flex-wrap:wrap }
+
+  .mem-area{ display:flex; gap:10px; align-items:flex-start; margin-top:10px; flex-wrap:wrap }
+  .mem-view{ flex:1; min-width:240px; height:360px; background:var(--glass); border-radius:10px; padding:10px; border:1px solid rgba(255,255,255,0.03); position:relative; overflow:hidden }
+  /* make side-by-side memory panes keep inside the container and not overflow */
+  .mem-views-row{ display:flex; gap:10px; align-items:flex-start; flex-wrap:wrap }
+  .mem-view.card{ width:calc(50% - 5px) }
+  .mem-title{ font-weight:700; margin-bottom:6px; color:var(--card-title); text-align:center; font-size:14px }
+  .mem-scroll{ position:absolute; left:10px; right:10px; top:36px; bottom:10px; overflow:auto; display:flex; flex-direction:column-reverse; gap:6px; padding-right:6px }
+
+  .block{ transition:all 240ms cubic-bezier(.2,.9,.3,1); border-radius:6px; margin-bottom:6px; display:flex; align-items:center; justify-content:center; font-size:12px; color:#06202a; cursor:pointer; box-shadow: inset 0 -6px 20px rgba(0,0,0,0.06) }
+  .block.free{ background: linear-gradient(90deg,#dfeffd,#bfe4ff); color:#063454; border:1px dashed rgba(0,0,0,0.06) }
+  .block.alloc{ color:var(--alloc-text); border:1px solid rgba(0,0,0,0.06) }
+  .block.highlight{ outline:3px solid #ffd54a; transform:scale(1.02); box-shadow:0 8px 30px rgba(0,0,0,0.3) }
+
+  .legend{ display:flex; gap:10px; margin-top:8px; align-items:center; color:var(--muted); font-size:12px; flex-wrap:wrap }
+  /* make legend more visible: larger swatches, subtle border and higher contrast text */
+  .legend{ display:flex; gap:10px; margin-top:8px; align-items:center; color:var(--muted); font-size:13px; flex-wrap:wrap }
+  .legend .item{ display:flex; gap:8px; align-items:center }
+  .swatch{ width:14px; height:14px; border-radius:4px; border:1px solid rgba(0,0,0,0.12); box-shadow:0 2px 6px rgba(0,0,0,0.18) }
+  .swatch.assigned{ background:linear-gradient(90deg,#34d399,#60a5fa,#f97316,#fb7185) }
+  .swatch.free{ background:#bfe4ff }
+
+  .metrics{ margin-top:10px; display:flex; gap:10px; align-items:flex-start; flex-wrap:wrap }
+  .metric-card{ flex:1; min-width:140px; background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent); padding:8px; border-radius:8px; border:1px solid rgba(255,255,255,0.03); font-size:13px }
+  .metric-card .big{ font-size:16px; font-weight:700; color:var(--text) }
+  .bar{ height:8px; background:rgba(255,255,255,0.06); border-radius:8px; overflow:hidden; margin-top:6px }
+  .bar-inner{ height:100%; background:linear-gradient(90deg,var(--accent),#7dd3fc); width:0%; transition:width 400ms ease }
+  .bar-inner.frag{ background: linear-gradient(90deg,var(--accent-2),#34d399) }
+
+  .log{ margin-top:10px; max-height:110px; overflow:auto; font-size:12px; color:var(--muted); padding:6px; border-radius:8px; background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.02) }
+
+  .footer{ margin-top:8px; color:var(--muted); font-size:13px; text-align:center }
+
+  /* subtle scrollbar for modern browsers */
+  .proc-list::-webkit-scrollbar, .mem-scroll::-webkit-scrollbar, .log::-webkit-scrollbar{ width:8px }
+  .proc-list::-webkit-scrollbar-thumb, .mem-scroll::-webkit-scrollbar-thumb, .log::-webkit-scrollbar-thumb{ background:rgba(255,255,255,0.04); border-radius:8px }
+
+  /* responsive */
+  @media (max-width:980px){
+    .layout{ flex-direction:column }
+    .left{ width:100% }
+    .mem-view{ height:300px }
+    .mem-view.card{ width:100% }
+  }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">SF</div>
+      <div>
+        <div class="title">Simulador: Best Fit ↔ Worst Fit</div>
+      </div>
+    </div>
+    <div class="toolbar-actions">
+      <button id="importJson" class="icon-btn" title="Importar estado JSON">Importar</button>
+      <button id="clearAll" class="icon-btn" title="Limpiar procesos y vistas">Limpiar</button>
+      <button id="themeToggle" class="icon-btn" title="Cambiar tema">Tema</button>
+    </div>
+  </div>
+
+  <div class="card guide-card">
+    <strong>Guía rápida</strong>
+    <div class="guide-text">
+      <ol>
+        <li><strong>Ajusta la memoria:</strong> pon el tamaño en "Tamaño memoria" y selecciona la unidad (KB/MB).</li>
+        <li><strong>Añade procesos:</strong> usa "Agregar proceso" con Nombre y Tamaño; los procesos aparecen en la lista.</li>
+        <li><strong>Ejecuta la comparación:</strong> pulsa "Ejecutar" para ver cómo Best Fit y Worst Fit asignan los procesos simultáneamente.</li>
+        <li><strong>Paso a paso:</strong> selecciona la estrategia y pulsa "Paso" para asignar procesos uno a uno.</li>
+        <li><strong>Fragmentación:</strong> usa "Fragmentar" para crear huecos dispersos y prueba "Probar proceso grande" para observar fragmentación externa.</li>
+        <li><strong>Atajos:</strong> "Aleatorio" genera procesos de ejemplo; "Exportar/Importar" guarda o carga estados en JSON.</li>
+        <li><strong>Tema:</strong> pulsa el botón "Tema" en la cabecera para alternar entre modo claro y modo oscuro; esto cambia los colores de la interfaz para mejorar la legibilidad según tu preferencia.</li>
+        <li><strong>Importar JSON:</strong> si vas a cargar un archivo JSON, primero pulsa "Limpiar" para borrar los procesos actuales y evitar mezclar listas. Después usa "Importar" para cargar el estado desde el archivo.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div class="left">
+      <div class="card" aria-labelledby="cfgTitle">
+        <div class="card-header">
+          <h3 id="cfgTitle">Configuración</h3>
+          <div class="unit-inline">Unidad:
+            <select id="unit" class="input unit-select" aria-label="Unidad">
+              <option value="KB">KB</option>
+              <option value="MB">MB</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label class="small">Tamaño memoria</label>
+          <input id="memSize" class="input" type="number" min="1" value="1024" aria-label="Tamaño de memoria" />
+        </div>
+
+        <div class="form-row">
+          <label class="small">Agregar proceso</label>
+          <input id="procName" class="input" type="text" placeholder="Nombre" aria-label="Nombre proceso" />
+          <input id="procSize" class="input small-input" type="number" min="1" placeholder="Tamaño" aria-label="Tamaño proceso" />
+        </div>
+        <div class="form-row spaced">
+          <div class="flex-fill"></div>
+          <button id="addProc" class="primary">Añadir</button>
+        </div>
+
+        <div class="proc-list" id="procList" aria-live="polite"></div>
+
+        <div class="controls">
+          <select id="strategy" class="input" aria-label="Estrategia">
+            <option value="best">Best Fit</option>
+            <option value="worst">Worst Fit</option>
+          </select>
+          <button id="runSim" class="primary">Ejecutar</button>
+          <button id="stepSim" class="secondary">Paso</button>
+          <button id="reset" class="secondary">Reset</button>
+          <button id="randGen" class="secondary">Aleatorio</button>
+          <button id="fragBtn" class="secondary" title="Crear fragmentación externa">Fragmentar</button>
+        </div>
+
+        <div class="form-row spaced center">
+          <label class="small">Probar proceso grande</label>
+          <input id="largeSize" class="input small-input" type="number" min="1" placeholder="Tamaño" />
+          <button id="tryLarge" class="primary">Probar</button>
+        </div>
+
+        <div class="toolbar">
+          <label class="small">Velocidad</label>
+          <input id="speed" class="range-input" type="range" min="80" max="1500" value="600" aria-label="Velocidad" />
+          <label class="auto-label"><input id="autoDefrag" type="checkbox"/> Auto-compact</label>
+        </div>
+
+        <div class="row-between">
+          <div>
+            <button id="exportJson" class="secondary">Exportar</button>
+            <input id="fileInput" class="file-hidden" type="file" accept="application/json" />
+          </div>
+          <div class="small-muted">Versión local — abre este archivo en tu navegador</div>
+        </div>
+
+        <div class="log" id="log" aria-live="polite">Log de acciones...</div>
+      </div>
+    </div>
+
+    <div class="right">
+      <div class="mem-views-row">
+        <div class="mem-view card" id="bestView">
+          <div class="mem-title">Best Fit</div>
+          <div class="mem-scroll" id="bestMem" aria-label="Memoria Best Fit"></div>
+        </div>
+
+        <div class="mem-view card" id="worstView">
+          <div class="mem-title">Worst Fit</div>
+          <div class="mem-scroll" id="worstMem" aria-label="Memoria Worst Fit"></div>
+        </div>
+      </div>
+
+      <!-- Resúmenes debajo de las memorias -->
+      <div class="summary-row">
+        <div class="card summary-card">
+          <h3>Resumen</h3>
+          <div class="metrics">
+            <div class="metric-card">
+              <div class="small small-muted">Utilización</div>
+              <div id="usePct" class="big">0 %</div>
+              <div class="bar"><div id="useBar" class="bar-inner"></div></div>
+            </div>
+            <div class="metric-card">
+              <div class="small small-muted">Fragmentación externa</div>
+              <div id="extFrag" class="big">0 KB</div>
+              <div class="bar"><div id="fragBar" class="bar-inner frag"></div></div>
+            </div>
+          </div>
+        </div>
+
+      <div class="legend">
+        <div class="item"><span class="swatch assigned"></span>Asignado (colores por proceso)</div>
+        <div class="item"><span class="swatch free"></span>Libre</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="footer">Desarrollado por Equipo 2</div>
+
+  <script>
+  /* modelo y utilidades */
+  const memSizeInput = document.getElementById('memSize');
+  const unitSelect = document.getElementById('unit');
+  const procNameInput = document.getElementById('procName');
+  const procSizeInput = document.getElementById('procSize');
+  const addBtn = document.getElementById('addProc');
+  const procListEl = document.getElementById('procList');
+  const bestMemEl = document.getElementById('bestMem');
+  const worstMemEl = document.getElementById('worstMem');
+  const runSimBtn = document.getElementById('runSim');
+  const stepBtn = document.getElementById('stepSim');
+  const resetBtn = document.getElementById('reset');
+  const randBtn = document.getElementById('randGen');
+  const fragBtn = document.getElementById('fragBtn');
+  const tryLargeBtn = document.getElementById('tryLarge');
+  const strategySel = document.getElementById('strategy');
+  const speedRange = document.getElementById('speed');
+  const autoDefragChk = document.getElementById('autoDefrag');
+  const logEl = document.getElementById('log');
+  const exportBtn = document.getElementById('exportJson');
+  const usePctEl = document.getElementById('usePct');
+  const useBarEl = document.getElementById('useBar');
+  const extFragEl = document.getElementById('extFrag');
+  const fragBarEl = document.getElementById('fragBar');
+  const importBtn = document.getElementById('importJson');
+  const fileInput = document.getElementById('fileInput');
+  const clearBtn = document.getElementById('clearAll');
+  const themeToggle = document.getElementById('themeToggle');
+
+  let processes = [];
+  let busy = false;
+  let simState = null; // for step mode
+  let lastBestBlocks = null;
+  let lastWorstBlocks = null;
+
+  function log(msg){
+    const t = new Date().toLocaleTimeString();
+    logEl.innerHTML = `<div>[${t}] ${msg}</div>` + logEl.innerHTML;
+  }
+
+  /* unidades */
+  function toKB(value){ return (unitSelect.value === 'MB') ? Math.round(value * 1024) : Math.round(value); }
+  function fromKB(kb){ return (unitSelect.value === 'MB') ? (Math.round(kb/1024*100)/100 + ' MB') : (kb + ' KB'); }
+
+  /* lista procesos UI */
+  function renderProcList(){
+    procListEl.innerHTML = '';
+    processes.forEach((p,i)=>{
+      const div = document.createElement('div'); div.className='proc-item';
+      div.innerHTML = `<div><strong>${p.name}</strong> <span class="proc-meta">(${fromKB(p.size)} )</span></div>`;
+      const right = document.createElement('div');
+      right.style.display='flex'; right.style.gap='6px'; right.style.alignItems='center';
+      const up = document.createElement('button'); up.className='secondary'; up.textContent='↑'; up.onclick=()=>{ if(i>0){ [processes[i-1],processes[i]]=[processes[i],processes[i-1]]; renderProcList(); } };
+      const down = document.createElement('button'); down.className='secondary'; down.textContent='↓'; down.onclick=()=>{ if(i<processes.length-1){ [processes[i+1],processes[i]]=[processes[i],processes[i+1]]; renderProcList(); } };
+      const del = document.createElement('button'); del.className='secondary'; del.textContent='✕'; del.onclick=()=>{ processes.splice(i,1); renderProcList(); log('Proceso '+p.name+' eliminado.'); };
+      right.appendChild(up); right.appendChild(down); right.appendChild(del);
+      div.appendChild(right);
+      procListEl.appendChild(div);
+    });
+  if(processes.length===0) procListEl.innerHTML = '<div class="small-muted">Sin procesos. Añade con el formulario o genera aleatorio.</div>';
+    log('Lista de procesos actualizada ('+processes.length+')');
+  }
+
+  /* memoria inicial */
+  function createInitialMemory(totalKB){ return [{ start:0, size: totalKB, free:true, pid:null }]; }
+
+  /* allocate helper */
+  function allocateProcess(blocks, process, comparator){
+    const candidates = blocks.map((b,idx)=>({b,idx})).filter(x=>x.b.free && x.b.size>=process.size);
+    if(!candidates.length) return null;
+    let chosen=candidates[0];
+    for(const c of candidates) if(comparator(c.b.size, chosen.b.size)) chosen=c;
+    const target = chosen.b; const idx=chosen.idx;
+    const allocated = { start: target.start, size: process.size, free:false, pid: process.name };
+    if(target.size === process.size) blocks[idx] = allocated;
+    else blocks.splice(idx,1,allocated,{ start: target.start + process.size, size: target.size - process.size, free:true, pid:null });
+    return { allocated, idx };
+  }
+
+  /* merge libres adyacentes */
+  function mergeFreeBlocks(blocks){
+    if(blocks.length<=1) return blocks;
+    const out=[];
+    for(const b of blocks){
+      if(!out.length) out.push({...b});
+      else {
+        const last = out[out.length-1];
+        if(last.free && b.free){ last.size += b.size; }
+        else out.push({...b});
+      }
+    }
+    // recompute starts
+    let cur=0;
+    for(const b of out){ b.start = cur; cur += b.size; }
+    return out;
+  }
+
+  /* defragment */
+  function defragmentBlocks(blocks, totalSize){
+    const allocated = blocks.filter(b=>!b.free).map(b=>({...b}));
+    let offset=0;
+    for(const a of allocated){ a.start = offset; offset += a.size; }
+    const freeSize = totalSize - offset;
+    const out = [...allocated];
+    if(freeSize>0) out.push({ start: offset, size: freeSize, free:true, pid:null});
+    return out;
+  }
+
+  /* metrics */
+  function calcMetrics(blocks, total){
+    let totalFree=0, largestFree=0;
+    for(const b of blocks){ if(b.free){ totalFree += b.size; largestFree = Math.max(largestFree, b.size); } }
+    const external = totalFree - largestFree;
+    const used = total - totalFree;
+    const usePct = Math.round(used/total*10000)/100;
+    return { totalFree, largestFree, external, used, usePct };
+  }
+
+  /* color for pid */
+  function colorForPid(pid){
+    const palette = ['#34d399','#60a5fa','#f97316','#fb7185','#a78bfa','#f59e0b','#7dd3fc','#f472b6'];
+    let h=0; for(let i=0;i<pid.length;i++) h=(h*31+pid.charCodeAt(i))%palette.length;
+    return palette[h];
+  }
+
+  /* render memory */
+  function renderMemory(container, blocks, totalKB){
+    container.innerHTML='';
+    const height = container.clientHeight || 420;
+    const scale = Math.max(1, totalKB / (height - 10));
+    blocks.forEach((b, idx)=>{
+      const el = document.createElement('div');
+      const h = Math.max(12, Math.floor(b.size / scale));
+      el.className = 'block ' + (b.free ? 'free' : 'alloc');
+      el.style.height = h + 'px';
+      el.style.width = '100%';
+      el.style.display='flex';
+      el.style.justifyContent='center';
+      el.style.alignItems='center';
+      el.style.fontSize='12px';
+      el.style.userSelect='none';
+      el.style.cursor = b.free ? 'default' : 'pointer';
+      el.dataset.idx = idx;
+      if(b.free){
+        el.textContent = fromKB(b.size) + ' libre';
+      } else {
+        el.textContent = b.pid + ' • ' + fromKB(b.size);
+        el.style.background = colorForPid(b.pid);
+        el.classList.add('alloc');
+      }
+      // tooltip on hover
+      el.title = `${b.free ? 'Libre' : 'Asignado'} — inicio: ${fromKB(b.start)} — tamaño: ${fromKB(b.size)}`;
+      // click to free
+      el.onclick = async ()=>{
+        if(!b.free){
+          // free it
+          blocks[idx].free = true; blocks[idx].pid = null;
+          blocks[idx] = {...blocks[idx], free:true, pid:null};
+          // merge
+          const merged = mergeFreeBlocks(blocks);
+          // update view
+          renderMemory(container, merged, totalKB);
+          updateSummaryUI(merged, totalKB);
+          log('Liberado bloque de '+b.pid+' ('+fromKB(b.size)+')');
+          // auto defrag if enabled
+          if(autoDefragChk.checked){
+            const def = defragmentBlocks(merged, totalKB);
+            renderMemory(container, def, totalKB);
+            updateSummaryUI(def, totalKB);
+            log('Auto-compact aplicado tras liberación.');
+          }
+        }
+      };
+      container.appendChild(el);
+    });
+  }
+
+  /* actualizar métricas UI global */
+  function updateSummaryUI(blocks, totalKB){
+    const m = calcMetrics(blocks, totalKB);
+    usePctEl.textContent = m.usePct + ' %';
+    useBarEl.style.width = m.usePct + '%';
+    extFragEl.textContent = fromKB(m.external);
+    // frag bar is proportion of external relative to total
+    fragBarEl.style.width = Math.round(m.external/totalKB*100) + '%';
+  }
+
+  async function runSimulation(kind, procs, totalKB, container){
+    let blocks = createInitialMemory(totalKB);
+    renderMemory(container, blocks, totalKB);
+    await sleep(200);
+    const comparator = (kind==='best') ? ((a,b)=> a < b) : ((a,b)=> a > b);
+    const speed = Number(speedRange.value);
+    let failed=[];
+    for(const p of procs){
+      // find candidates
+      const candidates = blocks.map((b, idx)=>({b,idx})).filter(x=>x.b.free && x.b.size>=p.size);
+      if(!candidates.length){
+        failed.push(p);
+        // flash
+        await flashFailure(container);
+        log(`${kind}: no cabe ${p.name} (${fromKB(p.size)})`);
+        continue;
+      }
+      // choose
+      let chosen = candidates[0];
+      for(const c of candidates) if(comparator(c.b.size, chosen.b.size)) chosen = c;
+      // highlight element (safe guard)
+      const child = container.children[chosen.idx];
+      if(child){ child.classList.add('highlight'); await sleep(180); child.classList.remove('highlight'); }
+      // allocate
+      allocateProcess(blocks, p, comparator);
+      blocks = mergeFreeBlocks(blocks);
+      renderMemory(container, blocks, totalKB);
+      updateSummaryUI(blocks, totalKB);
+      log(`${kind}: asignado ${p.name} (${fromKB(p.size)})`);
+      if(autoDefragChk.checked){ blocks = defragmentBlocks(blocks, totalKB); renderMemory(container, blocks, totalKB); log('Auto-compact aplicado.'); }
+      await sleep(speed);
+    }
+    log(`${kind} completado. Asignados:${procs.length - failed.length} Fallidos:${failed.length}`);
+    return { blocks, failed };
+  }
+
+  /* utilidades UI */
+  function sleep(ms){ return new Promise(r=>setTimeout(r, ms)); }
+  async function flashFailure(container){
+    const orig = container.style.background;
+    container.style.background = '#3b0a0a33';
+    await sleep(360);
+    container.style.background = orig;
+  }
+
+  /* controladores */
+  function addProcess(){
+    const name = (procNameInput.value || ('P'+(processes.length+1))).trim();
+    const rawSize = Number(procSizeInput.value);
+    if(!name || isNaN(rawSize) || rawSize <= 0){
+      alert('Introduce un nombre y un tamaño numérico mayor que 0.');
+      return;
+    }
+    const sizeKB = toKB(rawSize);
+    processes.push({ name, size: sizeKB });
+    procNameInput.value = '';
+    procSizeInput.value = '';
+    renderProcList();
+    procNameInput.focus();
+    log('Proceso ' + name + ' añadido (' + fromKB(sizeKB) + ').');
+  }
+  addBtn.onclick = addProcess;
+
+  procNameInput.addEventListener('keydown', (e)=> { if(e.key === 'Enter'){ e.preventDefault(); procSizeInput.focus(); } });
+  procSizeInput.addEventListener('keydown', (e)=> { if(e.key === 'Enter'){ e.preventDefault(); addProcess(); } });
+
+  randBtn.onclick = ()=>{
+    processes = [];
+    const total = toKB(Number(memSizeInput.value));
+    const count = Math.max(3, Math.floor(Math.random()*7)+3);
+    for(let i=1;i<=count;i++){
+      const size = Math.max(8, Math.floor(Math.random()*(Math.max(16, Math.floor(total/6))) ) );
+      processes.push({ name:'P'+i, size });
+    }
+    renderProcList(); log('Generados '+count+' procesos aleatorios.');
+  };
+
+  resetBtn.onclick = ()=>{
+    processes = [];
+    renderProcList();
+    bestMemEl.innerHTML=''; worstMemEl.innerHTML='';
+    updateSummaryUI(createInitialMemory(toKB(Number(memSizeInput.value))), toKB(Number(memSizeInput.value)));
+    simState = null; lastBestBlocks = null; lastWorstBlocks = null;
+    log('Reseteado simulador.');
+  };
+
+  runSimBtn.onclick = async ()=>{
+    if(busy) return; busy=true;
+    bestMemEl.innerHTML=''; worstMemEl.innerHTML='';
+    const totalKB = toKB(Number(memSizeInput.value));
+    const procs = processes.map(p=>({...p}));
+    // run both views to compare: best & worst
+    const p1 = runSimulation('best', procs, totalKB, bestMemEl);
+    const p2 = runSimulation('worst', procs, totalKB, worstMemEl);
+    const [r1, r2] = await Promise.all([p1,p2]);
+    lastBestBlocks = r1.blocks ? r1.blocks.slice() : createInitialMemory(totalKB);
+    lastWorstBlocks = r2.blocks ? r2.blocks.slice() : createInitialMemory(totalKB);
+    updateSummaryUI(lastBestBlocks, totalKB);
+    log('Comparación lista. Best asignados: '+(procs.length - r1.failed.length)+', Worst asignados: '+(procs.length - r2.failed.length));
+    busy=false;
+  };
+
+  stepBtn.onclick = async ()=>{
+    if(!simState){
+      const totalKB = toKB(Number(memSizeInput.value));
+      simState = { kind: strategySel.value, blocks: createInitialMemory(totalKB), procs: processes.map(p=>({...p})), idx:0, totalKB };
+      renderMemory( simState.kind==='best' ? bestMemEl : worstMemEl, simState.blocks, totalKB );
+      log('Modo paso iniciado ('+simState.kind+').');
+      return;
+    }
+    if(simState.idx >= simState.procs.length){ log('Todos los procesos procesados. Reinicia modo paso para una nueva ejecución.'); return; }
+    const p = simState.procs[simState.idx++];
+    const comparator = (simState.kind==='best') ? ((a,b)=> a<b) : ((a,b)=> a>b);
+    const candidates = simState.blocks.map((b,idx)=>({b,idx})).filter(x=>x.b.free && x.b.size>=p.size);
+    if(!candidates.length){ log('Paso: no cabe '+p.name); await flashFailure(simState.kind==='best'?bestMemEl:worstMemEl); }
+    else {
+      let chosen=candidates[0]; for(const c of candidates) if(comparator(c.b.size, chosen.b.size)) chosen=c;
+      const container = simState.kind==='best'? bestMemEl: worstMemEl;
+      const child = container.children[chosen.idx]; if(child){ child.classList.add('highlight'); await sleep(180); child.classList.remove('highlight'); }
+      allocateProcess(simState.blocks, p, comparator);
+      simState.blocks = mergeFreeBlocks(simState.blocks);
+      renderMemory(container, simState.blocks, simState.totalKB);
+      updateSummaryUI(simState.blocks, simState.totalKB);
+      log('Paso: asignado '+p.name+' ('+fromKB(p.size)+')');
+      if(autoDefragChk.checked){ simState.blocks = defragmentBlocks(simState.blocks, simState.totalKB); renderMemory(container, simState.blocks, simState.totalKB); log('Auto-compact aplicado.'); }
+    }
+  };
+
+  async function createFragmentationBlocks(totalKB){
+    let blocks = createInitialMemory(totalKB);
+    const procs = [];
+    let acc = 0, idx = 1;
+    while(acc < totalKB * 0.9){
+      const size = Math.max(8, Math.floor(Math.random()*(Math.min(80, totalKB - acc))) + 8);
+      if(acc + size > totalKB) break;
+      procs.push({ name: 'F'+(idx++), size });
+      acc += size;
+    }
+    for(const p of procs){
+      const candidates = blocks.map((b, idx)=>({b,idx})).filter(x=>x.b.free && x.b.size>=p.size);
+      if(!candidates.length) continue;
+      allocateProcess(blocks, p, (a,b)=> a < b);
+      blocks = mergeFreeBlocks(blocks);
+    }
+    for(let i=0;i<blocks.length;i++){ if(!blocks[i].free && i%2===0){ blocks[i].free = true; blocks[i].pid = null; } }
+    let cur=0; for(const b of blocks){ b.start = cur; cur+=b.size; }
+    return blocks;
+  }
+
+  function tryAllocateOnBlocks(blocks, sizeKB){
+    const copy = blocks.map(b=>({...b}));
+    const candidates = copy.map((b,idx)=>({b,idx})).filter(x=>x.b.free && x.b.size>=sizeKB);
+    if(!candidates.length) return { ok:false, blocks: copy };
+    const idx = candidates[0].idx;
+    const proc = { name:'BIG', size: sizeKB };
+    allocateProcess(copy, proc, (a,b)=> a > b);
+    return { ok:true, blocks: mergeFreeBlocks(copy) };
+  }
+
+  fragBtn.onclick = async ()=>{
+    if(busy) return; busy=true;
+    const totalKB = toKB(Number(memSizeInput.value));
+    const b1 = await createFragmentationBlocks(totalKB);
+    const b2 = b1.map(x=>({...x}));
+    lastBestBlocks = b1; lastWorstBlocks = b2;
+    renderMemory(bestMemEl, lastBestBlocks, totalKB);
+    renderMemory(worstMemEl, lastWorstBlocks, totalKB);
+    updateSummaryUI(lastBestBlocks, totalKB);
+    log('Fragmentación creada automáticamente.');
+    busy=false;
+  };
+
+  tryLargeBtn.onclick = async ()=>{
+    const rawSize = Number(document.getElementById('largeSize').value);
+    if(isNaN(rawSize) || rawSize <= 0){ alert('Introduce un tamaño numérico mayor que 0.'); return; }
+    const sizeKB = toKB(rawSize);
+    const totalKB = toKB(Number(memSizeInput.value));
+    const blocksBest = lastBestBlocks ? lastBestBlocks.map(b=>({...b})) : createInitialMemory(totalKB);
+    const blocksWorst = lastWorstBlocks ? lastWorstBlocks.map(b=>({...b})) : createInitialMemory(totalKB);
+    const r1 = tryAllocateOnBlocks(blocksBest, sizeKB);
+    const r2 = tryAllocateOnBlocks(blocksWorst, sizeKB);
+    if(!r1.ok && !r2.ok){
+      alert('No cabe el proceso grande en ningún hueco libre — esto demuestra fragmentación externa.');
+      log('Intento asignar proceso grande: fallo en ambas vistas (fragmentación externa).');
+      updateSummaryUI(blocksBest, totalKB);
+      renderMemory(bestMemEl, blocksBest, totalKB);
+      renderMemory(worstMemEl, blocksWorst, totalKB);
+      return;
+    }
+    if(r1.ok){ lastBestBlocks = r1.blocks; renderMemory(bestMemEl, r1.blocks, totalKB); updateSummaryUI(r1.blocks, totalKB); log('Proceso grande asignado en Best ('+fromKB(sizeKB)+').'); }
+    if(r2.ok){ lastWorstBlocks = r2.blocks; renderMemory(worstMemEl, r2.blocks, totalKB); updateSummaryUI(r2.blocks, totalKB); log('Proceso grande asignado en Worst ('+fromKB(sizeKB)+').'); }
+  };
+
+  exportBtn.onclick = ()=>{
+    const state = { processes, memSize: memSizeInput.value, unit: unitSelect.value };
+    const data = 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(state, null, 2));
+    const a = document.createElement('a'); a.href = data; a.download = 'sim_state_'+Date.now()+'.json'; a.click();
+    log('Exportado estado a JSON.');
+  };
+
+  // import
+  importBtn.onclick = ()=> fileInput.click();
+  fileInput.onchange = async (e)=>{
+    const f = e.target.files[0]; if(!f) return; const text = await f.text();
+    try{ const s = JSON.parse(text); if(s.processes) processes = s.processes; if(s.memSize) memSizeInput.value = s.memSize; if(s.unit) unitSelect.value = s.unit; renderProcList(); memSizeInput.dispatchEvent(new Event('input')); log('Estado importado.'); }
+    catch(err){ alert('JSON inválido'); }
+  };
+
+  clearBtn.onclick = ()=>{
+    // clear application state and reset simulator readiness
+    processes = [];
+    renderProcList();
+    bestMemEl.innerHTML=''; worstMemEl.innerHTML='';
+    simState = null; lastBestBlocks = null; lastWorstBlocks = null;
+    busy = false;
+    // re-render initial empty memory views to reflect current memSize
+    const total = toKB(Number(memSizeInput.value));
+    const initial = createInitialMemory(total);
+    renderMemory(bestMemEl, initial, total);
+    renderMemory(worstMemEl, initial, total);
+    updateSummaryUI(initial, total);
+    log('Contenido limpiado.');
+  };
+
+  themeToggle.onclick = ()=>{
+    const root = document.documentElement;
+    if(root.dataset.theme === 'light'){
+      root.dataset.theme = 'dark';
+      root.style.setProperty('--bg-start','#071024');
+      root.style.setProperty('--bg-end','#071726');
+      root.style.setProperty('--muted','#9aa7b2');
+      root.style.setProperty('--text','#e6eef6');
+      root.style.setProperty('--card-title','#dff3ff');
+      root.style.setProperty('--button-text','#ffffff');
+      root.style.setProperty('--alloc-text','#ffffff');
+    } else {
+      root.dataset.theme = 'light';
+      root.style.setProperty('--bg-start','#f7fafc');
+      root.style.setProperty('--bg-end','#e6eef5');
+      root.style.setProperty('--muted','#475569');
+      root.style.setProperty('--text','#071426');
+      root.style.setProperty('--card-title','#0f172a');
+      root.style.setProperty('--button-text','#0f172a');
+      root.style.setProperty('--alloc-text','#0f172a');
+    }
+    log('Tema cambiado.');
+  };
+
+  memSizeInput.onchange = memSizeInput.oninput = ()=>{
+    simState = null; lastBestBlocks = null; lastWorstBlocks = null;
+    const total = toKB(Number(memSizeInput.value));
+    const initial = createInitialMemory(total);
+    renderMemory(bestMemEl, initial, total);
+    renderMemory(worstMemEl, initial, total);
+    updateSummaryUI(initial, total);
+    log('Tamaño de memoria actualizado.');
+  };
+
+  unitSelect.onchange = ()=>{
+    renderProcList();
+    const total = toKB(Number(memSizeInput.value));
+    const initial = createInitialMemory(total);
+    renderMemory(bestMemEl, initial, total);
+    renderMemory(worstMemEl, initial, total);
+    updateSummaryUI(initial, total);
+    log('Unidad cambiada a '+unitSelect.value);
+  };
+
+  (function init(){
+    processes = [ { name:'P1', size: toKB(100) }, { name:'P2', size: toKB(250) }, { name:'P3', size: toKB(300) }, { name:'P4', size: toKB(120) }, { name:'P5', size: toKB(80) } ];
+    renderProcList();
+    const total = toKB(Number(memSizeInput.value));
+    const initial = createInitialMemory(total);
+    renderMemory(bestMemEl, initial, total);
+    renderMemory(worstMemEl, initial, total);
+    updateSummaryUI(initial, total);
+    log('Simulador listo. Usa Ejecutar para comparar Best/Worst.');
+  })();
+  </script>
+</body>
+</html>
